@@ -1,84 +1,65 @@
 import { Loading } from 'notiflix/build/notiflix-loading-aio';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Searchbar } from './Searchbar/Searchbar';
 import Button from './Button/Button';
 import { getImages } from '../pixabay-api';
 
-export class App extends Component {
-  state = {
-    maxPage: null,
-    inputQuery: '',
-    foundImages: [],
-    currentPage: 1,
+export const App = () => {
+  const [maxPage, setMaxPage] = useState(null);
+  const [inputQuery, setInputQuery] = useState('');
+  const [foundImages, setFoundImages] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    if (inputQuery === '') return;
+    Loading.dots();
+    getImages(inputQuery)
+      .then(data => {
+        if (data.hits.length === 0) {
+          Notify.info('За цим пошуком нічого не знайдено!');
+        }
+        setFoundImages(data.hits);
+        setMaxPage(Math.ceil(data.totalHits / 12));
+      })
+      .finally(() => Loading.remove());
+  }, [inputQuery]);
+
+  useEffect(() => {
+    if (currentPage === 1) return;
+    Loading.dots();
+    getImages(inputQuery, currentPage)
+      .then(data => {
+        setFoundImages(prevState => [...prevState, ...data.hits]);
+        setMaxPage(Math.ceil(data.totalHits / 12));
+      })
+      .finally(() => Loading.remove());
+  }, [currentPage, inputQuery]);
+
+  const onButtonLoadMore = () => {
+    setCurrentPage(prevState => prevState + 1);
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.inputQuery !== this.state.inputQuery &&
-      prevState.currentPage === this.state.currentPage
-    ) {
-      Loading.dots();
-      getImages(this.state.inputQuery)
-        .then(data => {
-          if (data.hits.length === 0) {
-            Notify.info('За цим пошуком нічого не знайдено!');
-          }
-          this.setState({
-            foundImages: data.hits,
-            maxPage: Math.ceil(data.totalHits / 12),
-          });
-        })
-        .finally(() => Loading.remove());
-    }
-    if (prevState.currentPage !== this.state.currentPage) {
-      Loading.dots();
-      getImages(this.state.inputQuery, this.state.currentPage)
-        .then(data => {
-          this.setState(prevState => {
-            return {
-              foundImages: [...prevState.foundImages, ...data.hits],
-              isLoading: true,
-              maxPage: Math.ceil(data.totalHits / 12),
-            };
-          });
-        })
-        .finally(() => Loading.remove());
-    }
-  }
-
-  onButtonLoadMore = () => {
-    this.setState(prevState => {
-      return {
-        currentPage: prevState.currentPage + 1,
-      };
-    });
-  };
-
-  onSumbitSearch = searchWord => {
-    if (searchWord.trim() === this.state.inputQuery) {
+  const onSumbitSearch = searchWord => {
+    if (searchWord.trim() === inputQuery) {
       return;
     }
     if (searchWord.trim() === '') {
       return Notify.info('Введіть запит для пошуку!');
     }
-    this.setState({ foundImages: [], inputQuery: searchWord, currentPage: 1 });
+    setFoundImages([]);
+    setInputQuery(searchWord);
+    setCurrentPage(1);
   };
 
-  render() {
-    const { foundImages, maxPage, currentPage } = this.state;
-    return (
-      <>
-        <Searchbar onSumbitSearch={this.onSumbitSearch} />
-        <ImageGallery foundImages={foundImages} />
-        {foundImages.length === 0 || maxPage === currentPage ? null : (
-          <Button
-            foundImages={foundImages}
-            onButtonLoadMore={this.onButtonLoadMore}
-          />
-        )}
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <Searchbar onSumbitSearch={onSumbitSearch} />
+      <ImageGallery foundImages={foundImages} />
+      {foundImages.length === 0 || maxPage === currentPage ? null : (
+        <Button foundImages={foundImages} onButtonLoadMore={onButtonLoadMore} />
+      )}
+    </>
+  );
+};

@@ -1,51 +1,42 @@
 import PropTypes from 'prop-types';
-import ImageGalleryItem from 'components/ImageGalleryItem/ImageGalleryItem';
-import { Component } from 'react';
+import { ImageGalleryItem } from 'components/ImageGalleryItem/ImageGalleryItem';
+import { useState } from 'react';
 import styles from '../../styles.module.css';
-import Modal from 'components/Modal/Modal';
+import { Modal } from 'components/Modal/Modal';
 
-export class ImageGallery extends Component {
-  state = {
-    modalIsOpen: false,
-    modalImage: '',
+export const ImageGallery = ({ foundImages }) => {
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalImage, setModalImage] = useState('');
+
+  const onClickCloseModal = () => {
+    setModalIsOpen(false);
   };
 
-  onClickCloseModal = () => {
-    this.setState({ modalIsOpen: false });
-  };
-
-  onClickChange = event => {
+  const onClickChange = event => {
     if (event.target.nodeName === 'IMG') {
-      this.setState({
-        modalIsOpen: true,
-        modalImage: event.target.dataset.bigimage,
-      });
+      setModalIsOpen(true);
+      setModalImage(event.target.dataset.bigimage);
     }
   };
 
-  render() {
-    return (
-      <>
-        <ul onClick={this.onClickChange} className={styles.ImageGallery}>
-          {this.props.foundImages.map(image => (
-            <ImageGalleryItem
-              key={image.id}
-              largeImageURL={image.largeImageURL}
-              webformatURL={image.webformatURL}
-              id={image.id}
-            />
-          ))}
-        </ul>
-        {this.state.modalIsOpen && (
-          <Modal
-            modalImage={this.state.modalImage}
-            onClickCloseModal={this.onClickCloseModal}
+  return (
+    <>
+      <ul onClick={onClickChange} className={styles.ImageGallery}>
+        {foundImages.map(image => (
+          <ImageGalleryItem
+            key={image.id}
+            largeImageURL={image.largeImageURL}
+            webformatURL={image.webformatURL}
+            id={image.id}
           />
-        )}
-      </>
-    );
-  }
-}
+        ))}
+      </ul>
+      {modalIsOpen && (
+        <Modal modalImage={modalImage} onClickCloseModal={onClickCloseModal} />
+      )}
+    </>
+  );
+};
 
 ImageGallery.propTypes = {
   foundImages: PropTypes.array,
