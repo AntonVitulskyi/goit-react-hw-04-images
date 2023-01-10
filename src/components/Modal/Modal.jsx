@@ -20,7 +20,7 @@ export const Modal = ({ onClickCloseModal, modalImage }) => {
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, []);
+  }, [onClickCloseModal]);
 
   return (
     <div
